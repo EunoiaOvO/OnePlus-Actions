@@ -416,6 +416,13 @@ jobs:
             echo "📦 启用 KPM..."
             echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
+
+          # ===== 修改 KSU Manager 内显示的版本格式 =====
+          echo "🔧 修改 KSU 版本显示格式..."
+          # 删除 setup.bin 设置的旧格式
+          sed -i '/CONFIG_KSU_FULL_NAME_FORMAT/d' ./common/arch/arm64/configs/gki_defconfig
+          # 添加新格式（去除 xiaoxiaow）
+          echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%-ReSukiSU"' >> ./common/arch/arm64/configs/gki_defconfig
           
           if [ "${{ github.event.inputs.SUSFS }}" == "On" ]; then
             echo "📦 启用 SUSFS 功能..."
