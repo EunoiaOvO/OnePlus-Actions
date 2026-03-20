@@ -291,6 +291,12 @@ jobs:
           cd KernelSU
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 30700)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+
+          # 去除 xiaoxiaow 标识
+          echo "🔧 修改 KSU 版本显示格式..."
+          DEFCONFIG_PATH=../common/arch/arm64/configs/gki_defconfig
+          sed -i '/CONFIG_KSU_FULL_NAME_FORMAT/d' "$DEFCONFIG_PATH"
+          echo 'CONFIG_KSU_FULL_NAME_FORMAT=\"%TAG_NAME%-%COMMIT_SHA%-@ReSukiSU\"' >> "$DEFCONFIG_PATH"
           
           echo "✅ ReSukiSU 配置完成"
           
