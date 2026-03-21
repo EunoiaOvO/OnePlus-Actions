@@ -576,19 +576,6 @@ jobs:
             cp "$image_path" kernel_workspace/kernel_platform/out/Final-Image-Find/Image
           fi
          
-      - name: 去除 AnyKernel 脚本中的 Base64 字符串
-        run: |
-          # 使用 sed 直接指定文件路径，不切换目录，最安全
-          sed -i '/base64 -d/d' AnyKernel3/anykernel.sh
-          sed -i '/ui_print " "/d' AnyKernel3/anykernel.sh
-
-      - name: Pack AnyKernel3
-        run: |
-          # 确保这里的路径是相对于根目录的
-          cp -f $GITHUB_WORKSPACE/kernel_workspace/out/arch/arm64/boot/Image AnyKernel3/Image
-          cd AnyKernel3
-          zip -r ../$ZIP_NAME-$KSU_VERSION.zip ./*
-         
       - name: "🧩 Patch Kernel Image (KPM) | KPM修补镜像"
         if: ${{ github.event.inputs.KPM == 'On' }}
         run: |
