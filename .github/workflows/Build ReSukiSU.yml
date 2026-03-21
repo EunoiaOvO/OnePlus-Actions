@@ -576,6 +576,12 @@ jobs:
             cp "$image_path" kernel_workspace/kernel_platform/out/Final-Image-Find/Image
           fi
 
+      - name: Pack AnyKernel3
+        run: |
+          cp -f $GITHUB_WORKSPACE/kernel_workspace/out/arch/arm64/boot/Image AnyKernel3/Image
+          cd AnyKernel3
+          zip -r ../$ZIP_NAME-$KSU_VERSION.zip ./*
+
       - name: 去除 AnyKernel 脚本中的 Base64 字符串
         run: |
           cd AnyKernel3
