@@ -187,7 +187,7 @@ jobs:
 
       - name: "💾 Restore ccache (With SUSFS) | 恢复ccache缓存 (With SUSFS)"
         if: ${{ github.event.inputs.SUSFS == 'On' }}
-        uses: actions/cache@v3
+        uses: actions/cache@5
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ runner.os }}-${{ github.ref }}-${{ github.event.inputs.FEIL }}-SukiSU-SUSFS
@@ -197,7 +197,7 @@ jobs:
 
       - name: "💾 Restore ccache (Without SUSFS) | 恢复ccache缓存 (Without SUSFS)"
         if: ${{ github.event.inputs.SUSFS == 'Off' }}
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ runner.os }}-${{ github.ref }}-${{ github.event.inputs.FEIL }}-SukiSU-NoSUSFS
@@ -610,7 +610,7 @@ jobs:
           echo "ARTIFACT_NAME=${FINAL_NAME}" >> $GITHUB_OUTPUT
 
       - name: "📤 Upload AnyKernel3 | 上传 AnyKernel3"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.set_name.outputs.ARTIFACT_NAME }}
           path: ./AnyKernel3/*
@@ -621,13 +621,13 @@ jobs:
           find -name crypto_zstdn.ko
           
       - name: "📤 Upload zram.ko | 上传 zram.ko"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ github.event.inputs.FEIL }}_zram.ko
           path: ./kernel_workspace/kernel_platform/common/out/drivers/block/zram/zram.ko
 
       # - name: "🤖 Get bot script | 获取 bot 脚本"
-        # uses: actions/checkout@v4
+        # uses: actions/checkout@v6
         # with:
           # path: bot
 
