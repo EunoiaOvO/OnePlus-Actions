@@ -1,0 +1,22 @@
+name: Auto Green
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 每天北京时间早上 8:00 自动运行
+  workflow_dispatch: # 也可以手动点击按钮运行
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Auto Commit
+        run: |
+          git config --local user.email "3561123798@qq.com"
+          git config --local user.name "EunoiaOvO"
+          echo "Last check-in: $(date)" > heartbeat.txt
+          git add heartbeat.txt
+          git commit -m "chore: nightly maintenance"
+          git push
