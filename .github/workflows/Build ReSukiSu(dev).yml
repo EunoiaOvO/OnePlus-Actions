@@ -1,4 +1,4 @@
-name: Build ReSukiSU
+name: Build ReSukiSU_dev
 on:
   workflow_dispatch:
     inputs:
