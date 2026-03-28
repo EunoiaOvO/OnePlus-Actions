@@ -1,4 +1,4 @@
-name: Build ReSukiSU_dev
+name: Build ReSukiSU(dev)
 on:
   workflow_dispatch:
     inputs:
@@ -286,10 +286,10 @@ jobs:
 
           # 下载并执行设置脚本
           echo "🛠️ 正在设置ReSukiSU..."
-          curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s dev
+          curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/dev/kernel/setup.sh" | bash -s dev
 
           cd KernelSU
-          KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 30700)
+          KSU_VERSION=$(expr $(/usr/bin/git rev-list --count dev) "+" 30700)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
           
           echo "✅ ReSukiSU 配置完成"
