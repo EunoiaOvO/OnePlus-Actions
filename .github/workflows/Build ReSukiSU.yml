@@ -56,7 +56,7 @@ on:
           - 'oneplus_nord_4_b'
           - 'oneplus_nord_ce4_lite_5g'
           - 'oneplus_nord_ce4_b'
-        default: 'oneplus_12_b'
+        default: 'oneplus_12_v'
         
       ANDROID_VERSION:
         description: "内核安卓KMI版本"
