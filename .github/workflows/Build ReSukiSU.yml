@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - 'sm8750'
+          - 'sm8735'
           - 'mt6991'
           - 'sm8650'
           - 'mt6989'
@@ -17,6 +18,7 @@ on:
           - 'sm8450'
           - 'sm8475'
           - 'sm7675'
+          - 'sm7635'
           - 'sm7550'
           - 'sm6375'
         default: 'sm8650'
@@ -34,6 +36,7 @@ on:
           - 'oneplus_pad_2_pro_b'
           - 'oneplus_pad_3_b'
           - 'oneplus_ace5_ultra_b'
+          - 'oneplus_turbo_6'
           - 'oneplus_12_v'
           - 'oneplus_ace3_pro_b'
           - 'oneplus_ace5_b'
@@ -53,6 +56,7 @@ on:
           - 'oneplus_ace_pro_v'
           - 'oneplus_10_pro_b'
           - 'oneplus_ace_3v_b'
+          - 'oneplus_turbo_6v'
           - 'oneplus_nord_4_b'
           - 'oneplus_nord_ce4_lite_5g'
           - 'oneplus_nord_ce4_b'
@@ -87,7 +91,7 @@ on:
         options:
           - 'On'
           - 'Off'
-        default: 'On'
+        default: 'Off'
 
       KPM:
         description: "是否启用KPM"
@@ -314,9 +318,9 @@ jobs:
           else
             cp ../kernel_patches/sukisu/scope_min_manual_hooks_v1.9.patch ./common/
           fi
-          cp ../kernel_patches/zram/001-lz4.patch ./common/
-          cp ../kernel_patches/zram/lz4armv8.S ./common/lib
-          cp ../kernel_patches/zram/002-zstd.patch ./common/
+          cp ../kernel_patches/zram_patches/001-lz4.patch ./common/
+          cp ../kernel_patches/zram_patches/lz4armv8.S ./common/lib
+          cp ../kernel_patches/zram_patches/002-zstd.patch ./common/
 
           if [ "${{ github.event.inputs.UNICODE_BYPASS }}" = "On" ]; then
             if [ "${{ github.event.inputs.KERNEL_VERSION }}" = "6.1" ] || [ "${{ github.event.inputs.KERNEL_VERSION }}" = "6.6" ]; then
@@ -521,15 +525,18 @@ jobs:
       - name: "🔨 Build Kernel | 编译内核"
         run: |
           echo "🏗️ 开始内核编译..."
+          export KBUILD_BUILD_USER="Eunoia"
+          export KBUILD_BUILD_HOST="Eunoia_build"
+
           if [ "${{ github.event.inputs.KERNEL_VERSION }}" == "6.1" ]; then
-            export KBUILD_BUILD_TIMESTAMP="Tue Dec 12 12:32:56 UTC 2025"
+            export KBUILD_BUILD_TIMESTAMP="Tue Mar 10 03:53:33 UTC 2026"
             export KBUILD_BUILD_VERSION=1
             export PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/clang/host/linux-x86/clang-r487747c/bin:$PATH"
             export PATH="/usr/lib/ccache:$PATH"
             sudo apt install libelf-dev
             cd kernel_workspace/kernel_platform/common
             make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC=../../prebuilts/rust/linux-x86/1.73.0b/bin/rustc PAHOLE=../../prebuilts/kernel-build-tools/linux-x86/bin/pahole LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 gki_defconfig all
-                      
+
           elif [ "${{ github.event.inputs.KERNEL_VERSION }}" == "6.6" ]; then
             export PATH="/usr/lib/ccache:$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin:$PATH" 
             export PATH="/usr/lib/ccache:$PATH"
