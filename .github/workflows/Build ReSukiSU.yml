@@ -86,7 +86,7 @@ on:
         options:
           - 'On'
           - 'Off'
-        default: 'Off'
+        default: 'On'
       KPM:
         description: "是否启用KPM"
         required: true
