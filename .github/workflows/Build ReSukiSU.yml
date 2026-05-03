@@ -87,6 +87,14 @@ on:
           - 'On'
           - 'Off'
         default: 'On'
+      SUSFS_LOG:
+        description: "是否启用SUSFS日志输出(仅SUSFS开启时生效)"
+        required: true
+        type: choice
+        options:
+          - 'On'
+          - 'Off'
+        default: 'Off'
       KPM:
         description: "是否启用KPM"
         required: true
@@ -137,7 +145,7 @@ on:
         default: 'Off'
 jobs:
   build:
-    name: For ${{ github.event.inputs.FEIL }} KPM ${{ github.event.inputs.KPM }} lz4kd ${{ github.event.inputs.lz4kd }} SUSFS ${{ github.event.inputs.SUSFS }}
+    name: For ${{ github.event.inputs.FEIL }} KPM ${{ github.event.inputs.KPM }} lz4kd ${{ github.event.inputs.lz4kd }} SUSFS ${{ github.event.inputs.SUSFS }} SUSFS_LOG ${{ github.event.inputs.SUSFS_LOG }}
     runs-on: ubuntu-latest
     env:
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
@@ -222,21 +230,26 @@ jobs:
           repo sync -c -j$(nproc --all) --no-tags --no-clone-bundle --force-sync
           rm kernel_platform/common/android/abi_gki_protected_exports_* || echo "No protected exports!"
           rm kernel_platform/msm-kernel/android/abi_gki_protected_exports_* || echo "No protected exports!"
-          sed -i 's/ -dirty//g' kernel_platform/common/scripts/setlocalversion
-          sed -i 's/ -dirty//g' kernel_platform/msm-kernel/scripts/setlocalversion
-          sed -i 's/ -dirty//g' kernel_platform/external/dtc/scripts/setlocalversion
-          sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' kernel_platform/common/scripts/setlocalversion
-          sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' kernel_platform/msm-kernel/scripts/setlocalversion
-          sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' kernel_platform/external/dtc/scripts/setlocalversion
+          
           if [ "${{ github.event.inputs.KERNEL_VERSION }}" != "6.6" ]; then
-            sed -i '$s|echo "\$res"|echo "-${{ github.event.inputs.ANDROID_VERSION }}-oki"|' kernel_platform/common/scripts/setlocalversion
-            sed -i '$s|echo "\$res"|echo "-${{ github.event.inputs.ANDROID_VERSION }}-oki"|' kernel_platform/msm-kernel/scripts/setlocalversion
-            sed -i '$s|echo "\$res"|echo "-${{ github.event.inputs.ANDROID_VERSION }}-oki"|' kernel_platform/external/dtc/scripts/setlocalversion
+            # 非 6.6 内核：直接覆盖 setlocalversion，输出固定后缀，彻底避免 git hash 和 dirty 混入版本号
+            SUFFIX="-${{ github.event.inputs.ANDROID_VERSION }}-oki"
+            for sv in kernel_platform/common/scripts/setlocalversion kernel_platform/msm-kernel/scripts/setlocalversion kernel_platform/external/dtc/scripts/setlocalversion; do
+              if [ -f "$sv" ]; then
+                printf '#!/bin/bash\necho "%s"\n' "$SUFFIX" > "$sv"
+                chmod +x "$sv"
+              fi
+            done
           else
+            # 6.6 内核：defconfig 已处理后缀，setlocalversion 直接返回空
+            for sv in kernel_platform/common/scripts/setlocalversion kernel_platform/msm-kernel/scripts/setlocalversion; do
+              if [ -f "$sv" ]; then
+                printf '#!/bin/bash\nexit 0\n' > "$sv"
+                chmod +x "$sv"
+              fi
+            done
             ESCAPED_SUFFIX=$(printf '%s\n' "-${{ github.event.inputs.ANDROID_VERSION }}-oki" | sed 's:[\/&]:\\&:g')
             sudo sed -i "s/-4k/$ESCAPED_SUFFIX/g" kernel_platform/common/arch/arm64/configs/gki_defconfig
-            sed -i 's/${scm_version}//' kernel_platform/common/scripts/setlocalversion
-            sed -i 's/${scm_version}//' kernel_platform/msm-kernel/scripts/setlocalversion
           fi
           echo "✅ 内核配置完成"
       - name: "⚡ Setup Baseband-guard | 配置 Baseband-guard"
@@ -351,6 +364,11 @@ jobs:
             echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+            if [ "${{ github.event.inputs.SUSFS_LOG }}" == "On" ]; then
+              echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/gki_defconfig
+            else
+              echo "# CONFIG_KSU_SUSFS_ENABLE_LOG is not set" >> ./common/arch/arm64/configs/gki_defconfig
+            fi
           else 
             echo "CONFIG_KSU_SUSFS=n" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -482,7 +500,11 @@ jobs:
             BASE_NAME="${{ github.event.inputs.FEIL }}_ReSukiSU_${{ env.KSUVER }}"
           fi
           if [ "${{ github.event.inputs.SUSFS }}" = "On" ]; then
-            FINAL_NAME="${BASE_NAME}_SUSFS"
+            if [ "${{ github.event.inputs.SUSFS_LOG }}" = "On" ]; then
+              FINAL_NAME="${BASE_NAME}_SUSFS_LOG"
+            else
+              FINAL_NAME="${BASE_NAME}_SUSFS"
+            fi
           else
             FINAL_NAME="${BASE_NAME}"
           fi
