@@ -1,4 +1,4 @@
-Name: Build ReSukiSU
+name: Build ReSukiSU
 on:
   workflow_dispatch:
     inputs:
@@ -423,7 +423,7 @@ jobs:
           echo "🔧 修改 KSU 版本显示格式..."
           # 删除 setup.bin 设置的旧格式
           sed -i '/CONFIG_KSU_FULL_NAME_FORMAT/d' ./common/arch/arm64/configs/gki_defconfig
-          # 添加新格式
+          # 添加新格式（去除 xiaoxiaow）
           echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%@ReSukiSU"' >> ./common/arch/arm64/configs/gki_defconfig
           
           if [ "${{ github.event.inputs.SUSFS }}" == "On" ]; then
