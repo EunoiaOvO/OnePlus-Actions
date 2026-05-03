@@ -35,7 +35,7 @@ on:
           - 'oneplus_pad_3_b'
           - 'oneplus_ace5_ultra_b'
           - 'oneplus_turbo_6'
-          - 'oneplus_12_b'
+          - 'oneplus_12_v'
           - 'oneplus_ace3_pro_b'
           - 'oneplus_ace5_b'
           - 'oneplus_13r_b'
@@ -58,7 +58,7 @@ on:
           - 'oneplus_nord_4_b'
           - 'oneplus_nord_ce4_lite_5g'
           - 'oneplus_nord_ce4_b'
-        default: 'oneplus_12_b'
+        default: 'oneplus_12_v'
       ANDROID_VERSION:
         description: "内核安卓KMI版本"
         required: true
@@ -94,7 +94,7 @@ on:
         options:
           - 'On'
           - 'Off'
-        default: 'Off'
+        default: 'On'
       lz4kd:
         description: "是否启用lz4kd(6.1 关闭时使用 lz4 + zstd; 6.6 关闭时使用 lz4)"
         required: true
@@ -112,7 +112,7 @@ on:
           - 'Off'
         default: 'On'
       bbr:
-        description: "是否启用BBR算法"
+        description: "是否启用BBR算法(对手机日用无太大意义甚至可能负优化)"
         required: true
         type: choice
         options:
@@ -120,7 +120,7 @@ on:
           - 'Off'
         default: 'Off'
       proxy:
-        description: "是否添加代理性能优化"
+        description: "是否添加代理性能优化(联发科芯片跑的时候请关闭否则出现恶性问题)"
         required: true
         type: choice
         options:
@@ -128,7 +128,7 @@ on:
           - 'Off'
         default: 'On'
       UNICODE_BYPASS:
-        description: "是否添加Unicode零宽绕过修复补丁"
+        description: "是否添加Unicode零宽绕过修复补丁(高内核版本不推荐开启, 建议使用 https://t.me/real5ec1cff/271 无痛修复)"
         required: true
         type: choice
         options:
@@ -145,7 +145,7 @@ jobs:
       CCACHE_HARDLINK: "true"
       CCACHE_MAXSIZE: 8G
     steps:
-      - name: "🚀 Maximize Build Space"
+      - name: "🚀 Maximize Build Space | 最大化构建空间"
         if: ${{ github.event.inputs.KERNEL_VERSION == '5.10' || github.event.inputs.KERNEL_VERSION == '5.15' }}
         uses: easimon/maximize-build-space@master
         with:
@@ -155,20 +155,24 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
-      - name: "⚙️ Setup Cache Env"
+      - name: "⚙️ Setup Cache Env | 设置缓存环境"
         run: |
+          echo "🔧 正在设置机型隔离缓存目录..."
           echo "CCACHE_DIR=$HOME/.ccache_${{ github.event.inputs.FEIL }}_ReSukiSU" >> $GITHUB_ENV
           mkdir -p "$HOME/.ccache_${{ github.event.inputs.FEIL }}_ReSukiSU"
-      - name: "🔐 Configure Git"
+          echo "✅ 缓存目录已设置: $HOME/.ccache_${{ github.event.inputs.FEIL }}_ReSukiSU"
+      - name: "🔐 Configure Git | 配置Git账户"
         run: |
+          echo "🔧 正在配置Git用户信息..."
           git config --global user.name "build"
           git config --global user.email "2210077278@qq.com"
-      - name: "📦 Cache & Install Dependencies"
+          echo "✅ Git配置完成"
+      - name: "📦 Cache & Install Dependencies | 缓存 & 安装构建依赖"
         uses: awalsh128/cache-apt-pkgs-action@latest 
         with: 
           packages: python3 git curl ccache libelf-dev build-essential flex bison libssl-dev libncurses-dev liblz4-tool zlib1g-dev libxml2-utils rsync unzip gawk dos2unix
           execute_install_scripts: true
-      - name: "💾 Restore ccache (With SUSFS)"
+      - name: "💾 Restore ccache (With SUSFS) | 恢复ccache缓存 (With SUSFS)"
         if: ${{ github.event.inputs.SUSFS == 'On' }}
         uses: actions/cache@v5
         with:
@@ -177,7 +181,7 @@ jobs:
           restore-keys: |
             ccache-${{ runner.os }}-${{ github.event.inputs.FEIL }}-ReSukiSU-SUSFS
             ccache-${{ runner.os }}-ReSukiSU-SUSFS
-      - name: "💾 Restore ccache (Without SUSFS)"
+      - name: "💾 Restore ccache (Without SUSFS) | 恢复ccache缓存 (Without SUSFS)"
         if: ${{ github.event.inputs.SUSFS == 'Off' }}
         uses: actions/cache@v5
         with:
@@ -186,23 +190,32 @@ jobs:
           restore-keys: |
             ccache-${{ runner.os }}-${{ github.event.inputs.FEIL }}-ReSukiSU-NoSUSFS
             ccache-${{ runner.os }}-ReSukiSU-NoSUSFS
-      - name: "⚙️ Initialize ccache"
+      - name: "⚙️ Initialize ccache | 初始化ccache"
         run: |
+          echo "🔧 正在初始化ccache..."
           INIT_FLAG="${{ env.CCACHE_DIR }}/.ccache_initialized"
           if command -v ccache >/dev/null 2>&1; then
             if [ ! -f "$INIT_FLAG" ]; then
               mkdir -p "${{ env.CCACHE_DIR }}"
               ccache -M ${{ env.CCACHE_MAXSIZE }}
               touch "$INIT_FLAG"
+              echo "✅ ccache初始化完成"
+            else
+              echo "ℹ️ ccache已存在，跳过初始化"
             fi
+          else
+            echo "⚠️ 未找到ccache命令，跳过初始化"
           fi
           ccache -s
-      - name: "📥 Install Repo Tool"
+          echo "✅ ccache初始化流程完成"
+      - name: "📥 Install Repo Tool | 安装Repo工具"
         run: |
+          echo "⬇️ 正在下载repo工具..."
           curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo > ~/repo
           chmod a+x ~/repo
           sudo mv ~/repo /usr/local/bin/repo
-      - name: "⬇️ Clone Kernel Source"
+          echo "✅ repo工具安装完成"
+      - name: "⬇️ Clone Kernel Source | 克隆内核源码"
         run: |
           mkdir kernel_workspace && cd kernel_workspace
           repo init -u https://github.com/Xiaomichael/kernel_manifest.git -b refs/heads/oneplus/${{ github.event.inputs.CPU }} -m ${{ github.event.inputs.FEIL }}.xml --depth=1
@@ -216,7 +229,7 @@ jobs:
           sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' kernel_platform/msm-kernel/scripts/setlocalversion
           sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' kernel_platform/external/dtc/scripts/setlocalversion
           if [ "${{ github.event.inputs.KERNEL_VERSION }}" != "6.6" ]; then
-            sed -i '$s|echo "\$res"|echo "-${{ github.event.inputs.ANDROID_VERSION }}-oki"|' kernel_platform/common/scripts/setlocalversion            
+            sed -i '$s|echo "\$res"|echo "-${{ github.event.inputs.ANDROID_VERSION }}-oki"|' kernel_platform/common/scripts/setlocalversion
             sed -i '$s|echo "\$res"|echo "-${{ github.event.inputs.ANDROID_VERSION }}-oki"|' kernel_platform/msm-kernel/scripts/setlocalversion
             sed -i '$s|echo "\$res"|echo "-${{ github.event.inputs.ANDROID_VERSION }}-oki"|' kernel_platform/external/dtc/scripts/setlocalversion
           else
@@ -225,21 +238,24 @@ jobs:
             sed -i 's/${scm_version}//' kernel_platform/common/scripts/setlocalversion
             sed -i 's/${scm_version}//' kernel_platform/msm-kernel/scripts/setlocalversion
           fi
-      - name: "⚡ Setup Baseband-guard"
+          echo "✅ 内核配置完成"
+      - name: "⚡ Setup Baseband-guard | 配置 Baseband-guard"
         if: ${{ github.event.inputs.bbg == 'On' && github.event.inputs.KPM == 'Off' }}
         run: |
           set -e
           cd kernel_workspace/kernel_platform/common
+          echo "🛠️ 正在设置BBG..."
           curl -sSL https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh -o setup.sh
           bash setup.sh     
-      - name: "⚡ Setup ReSukiSU"
+      - name: "⚡ Setup ReSukiSU | 配置 ReSukiSU"
         run: |
           cd kernel_workspace/kernel_platform
           curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s main
           cd KernelSU
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 30700)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-      - name: "🔧 Setup Patches"
+          echo "✅ ReSukiSU 配置完成"
+      - name: "🔧 Setup Patches | 配置补丁"
         run: |
           cd kernel_workspace
           if [ "${{ github.event.inputs.SUSFS }}" == "On" ]; then          
@@ -293,7 +309,8 @@ jobs:
           else
             patch -p1 -F 3 < scope_min_manual_hooks_v1.9.patch
           fi
-      - name: "⚙️ Apply SCHED Patch"
+          echo "✅ 所有补丁应用完成"
+      - name: "⚙️ Apply SCHED Patch | 应用风驰补丁"
         if: ${{ github.event.inputs.KERNEL_VERSION == '6.6' }}
         run: |
           cd kernel_workspace/kernel_platform/common
@@ -308,10 +325,11 @@ jobs:
             patch -p1 -F 3 < "fengchi_${{ github.event.inputs.FEIL }}.patch"
           else
             sed -i '1iobj-y += hmbird_patch.o' drivers/Makefile
-            wget https://github.com/Action-Build/raw/SukiSU-Ultra/patches/hmbird_patch.patch
+            wget https://github.com/Numbersf/Action-Build/raw/SukiSU-Ultra/patches/hmbird_patch.patch
             patch -p1 -F 3 < hmbird_patch.patch
+            echo "✅ OGKI转换GKI_patch完成"
           fi
-      - name: "⚙️ Configure Kernel Options"
+      - name: "⚙️ Configure Kernel Options | 配置内核选项"
         run: |
           cd kernel_workspace/kernel_platform
           curl -L -o resukisu_setup.bin https://github.com/Xiaomichael/OnePlus-Actions/raw/Build/script/resukisu_setup.bin
@@ -321,6 +339,8 @@ jobs:
           if [ "${{ github.event.inputs.KPM }}" == "On" ]; then
             echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
+          sed -i '/CONFIG_KSU_FULL_NAME_FORMAT/d' ./common/arch/arm64/configs/gki_defconfig
+          echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%@ReSukiSU"' >> ./common/arch/arm64/configs/gki_defconfig
           if [ "${{ github.event.inputs.SUSFS }}" == "On" ]; then
             echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -392,10 +412,12 @@ jobs:
           fi
           echo "CONFIG_HEADERS_INSTALL=n" >> ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/check_defconfig//' ./common/build.config.gki
-      - name: "🔨 Build Kernel"
+          echo "✅ 内核配置更新完成"
+      - name: "🔨 Build Kernel | 编译内核"
         run: |
-          export KBUILD_BUILD_USER="xiaoxiaow"
-          export KBUILD_BUILD_HOST="xiaoxiaow_build"
+          echo "🏗️ 开始内核编译..."
+          export KBUILD_BUILD_USER="Eunoia"
+          export KBUILD_BUILD_HOST="Eunoia_build"
           if [ "${{ github.event.inputs.KERNEL_VERSION }}" == "6.1" ]; then
             export KBUILD_BUILD_TIMESTAMP="Tue Mar 10 03:53:33 UTC 2026"
             export KBUILD_BUILD_VERSION=1
@@ -424,7 +446,8 @@ jobs:
             make -j$(nproc --all) LLVM_IAS=1 LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" RUSTC=../../prebuilts/rust/linux-x86/1.73.0b/bin/rustc PAHOLE=../../prebuilts/kernel-build-tools/linux-x86/bin/pahole LD=ld.lld HOSTLD=ld.lld O=out gki_defconfig all
           fi
           ccache -s
-      - name: "📦 Package Kernel"
+          echo "✅ 内核编译完成"
+      - name: "📦 Package Kernel | 打包内核"
         run: |
           git clone https://github.com/Xiaomichael/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
@@ -437,7 +460,7 @@ jobs:
             cp "$image_path" ./AnyKernel3/Image
             cp "$image_path" kernel_workspace/kernel_platform/out/Final-Image-Find/Image
           fi
-      - name: "🧩 Patch Kernel Image (KPM)"
+      - name: "🧩 Patch Kernel Image (KPM) | KPM修补镜像"
         if: ${{ github.event.inputs.KPM == 'On' }}
         run: |
           cd kernel_workspace/kernel_platform/out/Final-Image-Find
@@ -447,7 +470,7 @@ jobs:
           rm -f Image
           mv oImage Image
           cp Image $GITHUB_WORKSPACE/AnyKernel3/Image
-      - name: "🧠 Set Artifact Name"
+      - name: "🧠 Set Artifact Name | 设置产物名称"
         id: set_name
         run: |
           if [ "${{ github.event.inputs.lz4kd }}" = "On" ]; then
@@ -465,16 +488,16 @@ jobs:
             FINAL_NAME="${BASE_NAME}"
           fi
           echo "ARTIFACT_NAME=${FINAL_NAME}" >> $GITHUB_OUTPUT
-      - name: "📤 Upload AnyKernel3"
+      - name: "📤 Upload AnyKernel3 | 上传 AnyKernel3"
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.set_name.outputs.ARTIFACT_NAME }}
           path: ./AnyKernel3/*
-      - name: "📝 Find zram.ko & crypto_zstdn.ko"
+      - name: "📝 Find zram.ko & crypto_zstdn.ko | 查找 zram.ko & crypto_zstdn.ko"
         run: |
           find -name zram.ko
           find -name crypto_zstdn.ko
-      - name: "📤 Upload zram.ko"
+      - name: "📤 Upload zram.ko | 上传 zram.ko"
         uses: actions/upload-artifact@v7
         with:
           name: ${{ github.event.inputs.FEIL }}_zram.ko
